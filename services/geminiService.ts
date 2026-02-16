@@ -44,12 +44,25 @@ const FALLBACK_NEWS = [
  * Helper to call Gemini with exponential backoff for 429 errors
  */
 const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-3-flash-preview', retries: number = 2): Promise<string | null> => {
-  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  // Essayer d'abord import.meta.env (méthode recommandée pour Vite)
+  // Puis process.env (rétrocompatibilité)
+  const apiKey = (import.meta.env?.VITE_GEMINI_API_KEY as string) || 
+                 (process.env?.API_KEY as string) || 
+                 (process.env?.GEMINI_API_KEY as string) ||
+                 (process.env?.VITE_GEMINI_API_KEY as string);
   
-  if (!apiKey) {
-    console.error('GEMINI_API_KEY is not defined. Please set it in Cloudflare Pages environment variables.');
+  // Debug: Log API key status (without exposing the full key)
+  if (!apiKey || apiKey.trim() === '') {
+    console.error('❌ GEMINI_API_KEY is not defined or empty.');
+    console.error('Please check:');
+    console.error('1. Variable is set in Cloudflare Pages → Variables and Secrets');
+    console.error('2. Variable name is exactly: GEMINI_API_KEY');
+    console.error('3. After adding/changing the variable, trigger a new deployment');
     return null;
   }
+  
+  // Log partial key for debugging (first 10 chars only)
+  console.log('✅ API Key found:', apiKey.substring(0, 10) + '...');
   
   const ai = new GoogleGenAI({ apiKey });
   
@@ -62,16 +75,29 @@ const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-3
       return response.text || null;
     } catch (error: any) {
       const isRateLimit = error?.message?.includes('429') || error?.status === 429;
+      const isAuthError = error?.message?.includes('401') || error?.message?.includes('403') || error?.status === 401 || error?.status === 403;
+      
+      // Log detailed error for debugging
+      if (isAuthError) {
+        console.error('❌ Gemini API Authentication Error:', error?.message || error);
+        console.error('This usually means the API key is invalid or incorrect.');
+        break;
+      }
       
       if (isRateLimit && i < retries) {
         // Longer delays: 2s, then 5s
         const delay = (i === 0 ? 2000 : 5000);
+        console.warn(`⏳ Rate limit hit, retrying in ${delay/1000}s... (Attempt ${i + 1}/${retries + 1})`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
       
-      // Handle the error silently in the production-like view to avoid breaking UI
-      console.warn(`Gemini API busy or quota reached (Attempt ${i + 1}). Using fallback.`);
+      if (isRateLimit) {
+        console.warn(`⚠️ Gemini API rate limit/quota reached after ${retries + 1} attempts. Using fallback.`);
+        console.warn('Error details:', error?.message || error);
+      } else {
+        console.warn(`⚠️ Gemini API error (Attempt ${i + 1}):`, error?.message || error);
+      }
       break;
     }
   }

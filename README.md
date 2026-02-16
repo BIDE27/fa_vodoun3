@@ -42,10 +42,13 @@ View your app in AI Studio: https://ai.studio/apps/drive/1c-ehtaj528RYEMXIuqlLH6
 3. Ajoutez la variable d'environnement :
    - Dans les paramètres du projet, allez dans "Variables and Secrets"
    - Cliquez sur "+ Add" pour ajouter une nouvelle variable
-   - **Nom** : `GEMINI_API_KEY`
+   - **Nom** : `VITE_GEMINI_API_KEY` (recommandé) ou `GEMINI_API_KEY`
    - **Valeur** : Votre clé API Gemini
    - **Type** : Choisissez "Secret" (recommandé) ou "Plaintext"
-   - ⚠️ **Important** : Assurez-vous que la variable est bien enregistrée et visible dans la liste
+   - ⚠️ **Important** : 
+     * Assurez-vous que la variable est bien enregistrée et visible dans la liste
+     * Après avoir ajouté/modifié la variable, **déclenchez un nouveau déploiement** (les variables sont injectées au moment du build)
+     * Consultez les logs de build pour vérifier que la variable est détectée
 
 4. Déployez :
    - Cloudflare Pages détectera automatiquement les nouveaux commits et déploiera votre application
