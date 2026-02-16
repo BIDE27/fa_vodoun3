@@ -42,9 +42,9 @@ const FALLBACK_NEWS = [
 
 /**
  * Helper to call Gemini with exponential backoff for 429 errors
- * Utilise gemini-1.5-flash (gratuit) par défaut au lieu de gemini-3-flash-preview
+ * Utilise gemini-pro (modèle standard disponible) par défaut
  */
-const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-1.5-flash', retries: number = 2): Promise<string | null> => {
+const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-pro', retries: number = 2): Promise<string | null> => {
   // Essayer d'abord import.meta.env (méthode recommandée pour Vite)
   // Puis process.env (rétrocompatibilité)
   // Note: import.meta.env est disponible côté client après le build Vite
@@ -102,10 +102,9 @@ const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-1
       // Gestion spécifique pour RESOURCE_EXHAUSTED (quota dépassé)
       if (isResourceExhausted) {
         console.error('❌ Gemini API Quota Exhausted (RESOURCE_EXHAUSTED)');
-        console.error('Le modèle utilisé n\'est peut-être pas disponible dans le quota gratuit.');
+        console.error('Le modèle utilisé n\'est peut-être pas disponible ou le quota est dépassé.');
         console.error('Modèle utilisé:', modelName);
-        console.error('Vérifiez que vous utilisez gemini-1.5-flash ou gemini-1.5-pro (gratuits)');
-        console.error('Les modèles gemini-3-* ne sont pas disponibles dans le quota gratuit.');
+        console.error('Vérifiez que vous utilisez gemini-pro (modèle standard disponible)');
         break;
       }
       
@@ -175,8 +174,8 @@ Directives de réponse :
 
 Question de l'utilisateur : ${question}`;
 
-  // Utilise gemini-1.5-pro (gratuit) au lieu de gemini-3-pro-preview qui n'est pas disponible en gratuit
-  const result = await callGeminiWithRetry(prompt, 'gemini-1.5-pro', 1);
+  // Utilise gemini-pro (modèle standard disponible) au lieu de gemini-1.5-pro qui n'existe pas dans cette API
+  const result = await callGeminiWithRetry(prompt, 'gemini-pro', 1);
   
   return result || "Les ancêtres sont silencieux pour le moment. Consultez le Fa physiquement pour une guidance plus profonde. [ACTION_CONSULTATION]";
 };
