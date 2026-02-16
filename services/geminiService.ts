@@ -42,8 +42,9 @@ const FALLBACK_NEWS = [
 
 /**
  * Helper to call Gemini with exponential backoff for 429 errors
+ * Utilise gemini-1.5-flash (gratuit) par défaut au lieu de gemini-3-flash-preview
  */
-const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-3-flash-preview', retries: number = 2): Promise<string | null> => {
+const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-1.5-flash', retries: number = 2): Promise<string | null> => {
   // Essayer d'abord import.meta.env (méthode recommandée pour Vite)
   // Puis process.env (rétrocompatibilité)
   const apiKey = (import.meta.env?.VITE_GEMINI_API_KEY as string) || 
@@ -75,12 +76,25 @@ const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-3
       return response.text || null;
     } catch (error: any) {
       const isRateLimit = error?.message?.includes('429') || error?.status === 429;
+      const isResourceExhausted = error?.message?.includes('RESOURCE_EXHAUSTED') || 
+                                   error?.status === 'RESOURCE_EXHAUSTED' ||
+                                   (error?.error?.status === 'RESOURCE_EXHAUSTED');
       const isAuthError = error?.message?.includes('401') || error?.message?.includes('403') || error?.status === 401 || error?.status === 403;
       
       // Log detailed error for debugging
       if (isAuthError) {
         console.error('❌ Gemini API Authentication Error:', error?.message || error);
         console.error('This usually means the API key is invalid or incorrect.');
+        break;
+      }
+      
+      // Gestion spécifique pour RESOURCE_EXHAUSTED (quota dépassé)
+      if (isResourceExhausted) {
+        console.error('❌ Gemini API Quota Exhausted (RESOURCE_EXHAUSTED)');
+        console.error('Le modèle utilisé n\'est peut-être pas disponible dans le quota gratuit.');
+        console.error('Modèle utilisé:', modelName);
+        console.error('Vérifiez que vous utilisez gemini-1.5-flash ou gemini-1.5-pro (gratuits)');
+        console.error('Les modèles gemini-3-* ne sont pas disponibles dans le quota gratuit.');
         break;
       }
       
@@ -150,7 +164,8 @@ Directives de réponse :
 
 Question de l'utilisateur : ${question}`;
 
-  const result = await callGeminiWithRetry(prompt, 'gemini-3-pro-preview', 1);
+  // Utilise gemini-1.5-pro (gratuit) au lieu de gemini-3-pro-preview qui n'est pas disponible en gratuit
+  const result = await callGeminiWithRetry(prompt, 'gemini-1.5-pro', 1);
   
   return result || "Les ancêtres sont silencieux pour le moment. Consultez le Fa physiquement pour une guidance plus profonde. [ACTION_CONSULTATION]";
 };

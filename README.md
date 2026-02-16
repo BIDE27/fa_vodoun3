@@ -53,3 +53,31 @@ View your app in AI Studio: https://ai.studio/apps/drive/1c-ehtaj528RYEMXIuqlLH6
 4. Déployez :
    - Cloudflare Pages détectera automatiquement les nouveaux commits et déploiera votre application
    - Votre application sera accessible à l'URL fournie par Cloudflare Pages
+
+### Dépannage - Le chat IA ne fonctionne pas
+
+Si le chat IA ne répond pas ou affiche "Les ancêtres sont silencieux...", vérifiez :
+
+1. **Variable d'environnement** :
+   - Ouvrez la console du navigateur (F12)
+   - Cherchez les messages d'erreur concernant `GEMINI_API_KEY`
+   - Si vous voyez "❌ GEMINI_API_KEY is not defined", la variable n'est pas injectée
+
+2. **Vérifiez dans Cloudflare Pages** :
+   - Allez dans "Variables and Secrets"
+   - Vérifiez que la variable existe (nom exact : `VITE_GEMINI_API_KEY` ou `GEMINI_API_KEY`)
+   - **Important** : Après avoir ajouté/modifié une variable, vous devez **redéployer** manuellement
+
+3. **Vérifiez les logs de build** :
+   - Dans Cloudflare Pages, allez dans "Deployments"
+   - Cliquez sur le dernier déploiement
+   - Vérifiez les logs de build pour voir si la variable est détectée
+   - Vous devriez voir : "✅ GEMINI_API_KEY trouvée au build: ..."
+
+4. **Erreurs 429 (Rate Limit)** :
+   - Si vous voyez des erreurs 429 dans la console, cela signifie que la clé API est valide mais le quota est dépassé
+   - Vérifiez votre quota sur [Google AI Studio](https://aistudio.google.com/)
+
+5. **Redéploiement manuel** :
+   - Dans Cloudflare Pages, allez dans "Deployments"
+   - Cliquez sur "Retry deployment" ou "Redeploy" pour forcer un nouveau build avec les variables mises à jour
