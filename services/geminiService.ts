@@ -44,7 +44,14 @@ const FALLBACK_NEWS = [
  * Helper to call Gemini with exponential backoff for 429 errors
  */
 const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-3-flash-preview', retries: number = 2): Promise<string | null> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    console.error('GEMINI_API_KEY is not defined. Please set it in Cloudflare Pages environment variables.');
+    return null;
+  }
+  
+  const ai = new GoogleGenAI({ apiKey });
   
   for (let i = 0; i <= retries; i++) {
     try {
