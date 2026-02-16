@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+// Utilisation de l'API REST directe de Gemini au lieu du package @google/genai
 
 // Persistent caching to save quota (persists across refreshes)
 const getCachedValue = (key: string): string | null => {
@@ -42,9 +42,9 @@ const FALLBACK_NEWS = [
 
 /**
  * Helper to call Gemini with exponential backoff for 429 errors
- * Utilise gemini-pro (modèle standard disponible) par défaut
+ * Utilise gemini-1.5-flash-latest (modèle gratuit disponible) par défaut
  */
-const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-pro', retries: number = 2): Promise<string | null> => {
+const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-1.5-flash-latest', retries: number = 2): Promise<string | null> => {
   // Essayer d'abord import.meta.env (méthode recommandée pour Vite)
   // Puis process.env (rétrocompatibilité)
   // Note: import.meta.env est disponible côté client après le build Vite
@@ -76,15 +76,33 @@ const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-p
   // Log partial key for debugging (first 10 chars only)
   console.log('✅ API Key found:', apiKey.substring(0, 10) + '...');
   
-  const ai = new GoogleGenAI({ apiKey });
+  // Utilisation de l'API REST directe de Gemini
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
   
   for (let i = 0; i <= retries; i++) {
     try {
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt,
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }]
+        })
       });
-      return response.text || null;
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(JSON.stringify(errorData));
+      }
+      
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      return text || null;
     } catch (error: any) {
       const isRateLimit = error?.message?.includes('429') || error?.status === 429;
       const isResourceExhausted = error?.message?.includes('RESOURCE_EXHAUSTED') || 
@@ -104,7 +122,7 @@ const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-p
         console.error('❌ Gemini API Quota Exhausted (RESOURCE_EXHAUSTED)');
         console.error('Le modèle utilisé n\'est peut-être pas disponible ou le quota est dépassé.');
         console.error('Modèle utilisé:', modelName);
-        console.error('Vérifiez que vous utilisez gemini-pro (modèle standard disponible)');
+        console.error('Modèles disponibles: gemini-1.5-flash-latest, gemini-1.5-pro-latest, gemini-pro');
         break;
       }
       
@@ -174,8 +192,8 @@ Directives de réponse :
 
 Question de l'utilisateur : ${question}`;
 
-  // Utilise gemini-pro (modèle standard disponible) au lieu de gemini-1.5-pro qui n'existe pas dans cette API
-  const result = await callGeminiWithRetry(prompt, 'gemini-pro', 1);
+  // Utilise gemini-1.5-flash-latest (modèle gratuit disponible) pour le chat
+  const result = await callGeminiWithRetry(prompt, 'gemini-1.5-flash-latest', 1);
   
   return result || "Les ancêtres sont silencieux pour le moment. Consultez le Fa physiquement pour une guidance plus profonde. [ACTION_CONSULTATION]";
 };
