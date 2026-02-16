@@ -384,15 +384,30 @@ export default function App() {
         return s;
     }));
     setIsTyping(true);
-    const responseText = await askSpiritualAssistant(queryText);
-    setIsTyping(false);
-    const aiMsg: Message = { role: 'ai', text: responseText };
-    setSessions(prev => prev.map(s => {
-        if (s.id === currentSessionId) {
-            return { ...s, messages: [...s.messages, aiMsg] };
-        }
-        return s;
-    }));
+    try {
+      const responseText = await askSpiritualAssistant(queryText);
+      setIsTyping(false);
+      const aiMsg: Message = { role: 'ai', text: responseText };
+      setSessions(prev => prev.map(s => {
+          if (s.id === currentSessionId) {
+              return { ...s, messages: [...s.messages, aiMsg] };
+          }
+          return s;
+      }));
+    } catch (error) {
+      console.error('Erreur lors de l\'appel à l\'API:', error);
+      setIsTyping(false);
+      const errorMsg: Message = { 
+        role: 'ai', 
+        text: 'Une erreur est survenue. Veuillez vérifier la console pour plus de détails.' 
+      };
+      setSessions(prev => prev.map(s => {
+          if (s.id === currentSessionId) {
+              return { ...s, messages: [...s.messages, errorMsg] };
+          }
+          return s;
+      }));
+    }
   };
 
   const handleChatSubmit = (e: React.FormEvent) => {

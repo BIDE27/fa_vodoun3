@@ -47,10 +47,21 @@ const FALLBACK_NEWS = [
 const callGeminiWithRetry = async (prompt: string, modelName: string = 'gemini-1.5-flash', retries: number = 2): Promise<string | null> => {
   // Essayer d'abord import.meta.env (méthode recommandée pour Vite)
   // Puis process.env (rétrocompatibilité)
+  // Note: import.meta.env est disponible côté client après le build Vite
   const apiKey = (import.meta.env?.VITE_GEMINI_API_KEY as string) || 
+                 (import.meta.env?.GEMINI_API_KEY as string) ||
                  (process.env?.API_KEY as string) || 
                  (process.env?.GEMINI_API_KEY as string) ||
                  (process.env?.VITE_GEMINI_API_KEY as string);
+  
+  // Debug détaillé
+  console.log('🔍 Debug API Key:', {
+    hasViteGemini: !!import.meta.env?.VITE_GEMINI_API_KEY,
+    hasGemini: !!import.meta.env?.GEMINI_API_KEY,
+    hasProcessApiKey: !!process.env?.API_KEY,
+    hasProcessGemini: !!process.env?.GEMINI_API_KEY,
+    finalKey: apiKey ? apiKey.substring(0, 10) + '...' : 'NOT FOUND'
+  });
   
   // Debug: Log API key status (without exposing the full key)
   if (!apiKey || apiKey.trim() === '') {

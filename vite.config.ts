@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
       define: {
         // Support pour import.meta.env (recommandé pour Vite)
         'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(apiKey),
+        'import.meta.env.GEMINI_API_KEY': JSON.stringify(apiKey),
         // Rétrocompatibilité avec process.env
         'process.env.API_KEY': JSON.stringify(apiKey),
         'process.env.GEMINI_API_KEY': JSON.stringify(apiKey),
