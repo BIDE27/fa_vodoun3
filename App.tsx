@@ -318,6 +318,15 @@ export default function App() {
     localStorage.setItem('fa_chat_sessions', JSON.stringify(sessions));
   }, [sessions]);
 
+  // Diagnostic de la clé API au démarrage
+  useEffect(() => {
+    console.log('🔍 Diagnostic API Key au démarrage:');
+    console.log('import.meta.env.VITE_GEMINI_API_KEY:', import.meta.env?.VITE_GEMINI_API_KEY ? '✅ Trouvé' : '❌ Non trouvé');
+    console.log('import.meta.env.GEMINI_API_KEY:', import.meta.env?.GEMINI_API_KEY ? '✅ Trouvé' : '❌ Non trouvé');
+    console.log('process.env.API_KEY:', process.env?.API_KEY ? '✅ Trouvé' : '❌ Non trouvé');
+    console.log('process.env.GEMINI_API_KEY:', process.env?.GEMINI_API_KEY ? '✅ Trouvé' : '❌ Non trouvé');
+  }, []);
+
   useEffect(() => {
       if (scrollRef.current) {
           scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
